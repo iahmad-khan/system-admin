@@ -1,0 +1,5 @@
+
+if you want to preserve the settings of /etc/resolve.cong (not to be overwitten by dhclient) , 
+then edit the file /etc/sysconfig/network-scripts/ifcg-eth0 and set PEER DNS = no . 
+
+If it is desirable to have ipv4 addresses in resolv.conf , run the command : dhclient -4. 
