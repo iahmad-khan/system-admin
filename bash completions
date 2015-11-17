@@ -1,3 +1,7 @@
+bash completion (Centos , Rhel-7) [completions of sub commands untill last]
+yum install bash-completion 
+source /etc/bash_completion
+
 docker bash completion
 https://docs.docker.com/compose/completion/
 
