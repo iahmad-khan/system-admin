@@ -1,3 +1,95 @@
 #Remove network manager
 apt-get purge network-manager
 
+$ ip a show
+
+Note the default Ethernet and wifi interfaces:
+ip-a-show
+
+It looks like our Ethernet port is eth0. Our WiFi radio is wlan0. Want to make this briefer?
+
+    $ ip a show | awk  '/^[0-9]: /{print $2}'
+
+The output of this command will look something like this:
+
+lo:
+eth0:
+wlan0:
+
+Your gateway IP address is found with:
+
+    route -n
+
+It provides access to destination 0.0.0.0 (everything). In the below image it is 192.168.0.1, which is perfectly nominal.
+
+route-n
+Let’s do a bit of easy configuration in our /etc/networking/interfaces file. The format of this file is not difficult to put together from the man page, but really, you should search for examples first.
+interfaces
+Plug in your Ethernet port.
+
+Basically, we’re just adding DHCP entries for our interfaces. Above you’ll see a route to another network that appears when I get a DHCP lease on my Ethernet port. Next, add this:
+
+ 
+
+    auto lo
+    iface lo inet loopback
+    auto eth0
+    iface eth0 inet dhcp
+    auto wlan0
+    iface wlan0 inet dhcp
+    
+Next, enable and start the networking service:
+
+    sudo update-rc.d networking enable
+
+ 
+
+    sudo /etc/init.d/networking start
+
+Let’s make sure this works, by resetting the port with these commands:
+
+    sudo ifdown eth0
+    sudo ip a flush eth0
+    
+        sudo ifup eth0
+
+This downs the interface, flushes the address assignment to it, and then brings it up. Test it out by pinging your gateway IP: ping 192.168.0.1. If you don’t get a response, your interface is not connected or your made a typo.
+
+Let’s “do some WiFi” next! We want to make an /etc/wpa_supplicant.conf file. Consider mine:
+
+    network={
+    ssid="CenturyLink7851"
+    scan_ssid=1
+    key_mgmt=WPA-PSK
+    psk="4f-------------ac"
+    }
+
+Now we can reset the WiFi interface and put this to work:
+
+    sudo ifdown wlan0
+
+ 
+
+    sudo ip a flush wlan0
+    
+        sudo ifup wlan0
+
+ 
+
+    sudo wpa_supplicant -Dnl80211 -c /root/wpa_supplicant.conf -iwlan0 -B
+
+ 
+
+    sudo dhclient wlan0
+
+That should do it. Use a ping to find out, and do it explicitly from wlan0, so it gets it’s address first:
+
+ 
+
+    $ ip a show wlan0 | grep "inet"
+    
+    Presumably dhclient updated your /etc/resolv.conf, so you can also do a:
+
+    ping -I 192.168.0.45 www.yahoo.com
+
+Well guess what – you’re now running without NetworkManager!
