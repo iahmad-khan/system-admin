@@ -1,0 +1,3 @@
+#Remove network manager
+apt-get purge network-manager
+
