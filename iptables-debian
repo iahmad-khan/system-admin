@@ -1,0 +1,96 @@
+Viewing current configuration
+
+See what rules are already configured. Issue this command:
+
+ iptables -L
+
+The output will be similar to this:
+
+ Chain INPUT (policy ACCEPT)
+ target     prot opt source               destination
+
+ Chain FORWARD (policy ACCEPT)
+ target     prot opt source               destination
+
+ Chain OUTPUT (policy ACCEPT)
+ target     prot opt source               destination
+
+This allows anyone access to anything from anywhere.
+
+Storing iptables rules in a file
+
+Note: there is a package designed to help with this: iptables-persistent
+
+Let's tighten that up a bit by creating a test iptables file:
+
+ editor /etc/iptables.test.rules
+
+In this file enter some basic rules:
+
+*filter
+
+# Allows all loopback (lo0) traffic and drop all traffic to 127/8 that doesn't use lo0
+-A INPUT -i lo -j ACCEPT
+-A INPUT ! -i lo -d 127.0.0.0/8 -j REJECT
+
+# Accepts all established inbound connections
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# Allows all outbound traffic
+# You could modify this to only allow certain traffic
+-A OUTPUT -j ACCEPT
+
+# Allows HTTP and HTTPS connections from anywhere (the normal ports for websites)
+-A INPUT -p tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp --dport 443 -j ACCEPT
+
+# Allows SSH connections 
+# The --dport number is the same as in /etc/ssh/sshd_config
+-A INPUT -p tcp -m state --state NEW --dport 22 -j ACCEPT
+
+# Now you should read up on iptables rules and consider whether ssh access 
+# for everyone is really desired. Most likely you will only allow access from certain IPs.
+
+# Allow ping
+#  note that blocking other types of icmp packets is considered a bad idea by some
+#  remove -m icmp --icmp-type 8 from this line to allow all kinds of icmp:
+#  https://security.stackexchange.com/questions/22711
+-A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
+
+# log iptables denied calls (access via 'dmesg' command)
+-A INPUT -m limit --limit 5/min -j LOG --log-prefix "iptables denied: " --log-level 7
+
+# Reject all other inbound - default deny unless explicitly allowed policy:
+-A INPUT -j REJECT
+-A FORWARD -j REJECT
+
+COMMIT
+
+That may look complicated, but look at each section at a time. You will see that it simply shuts all ports except the ones we have allowed - which in this case are ports 80 and 443 (the standard web browser ports) and the SSH port defined earlier.
+
+Activate these new rules:
+
+ iptables-restore < /etc/iptables.test.rules
+
+And see the difference:
+
+ iptables -L
+
+Now the output tells us that only the ports defined above are open. All the others are closed.
+
+Once you are happy, save the new rules to the master iptables file:
+
+ iptables-save > /etc/iptables.up.rules
+
+To make sure the iptables rules are started on a reboot we'll create a new file:
+
+ editor /etc/network/if-pre-up.d/iptables
+
+Add these lines to it:
+
+ #!/bin/sh
+ /sbin/iptables-restore < /etc/iptables.up.rules
+
+The file needs to be executable so change the permissions:
+
+ chmod +x /etc/network/if-pre-up.d/iptables
