@@ -1,5 +1,4 @@
-#Remove network manager
-apt-get purge network-manager
+
 
 $ ip a show
 
@@ -23,6 +22,10 @@ Your gateway IP address is found with:
 It provides access to destination 0.0.0.0 (everything). In the below image it is 192.168.0.1, which is perfectly nominal.
 
 route-n
+
+#Remove network manager
+apt-get purge network-manager
+
 Let’s do a bit of easy configuration in our /etc/networking/interfaces file. The format of this file is not difficult to put together from the man page, but really, you should search for examples first.
 interfaces
 Plug in your Ethernet port.
