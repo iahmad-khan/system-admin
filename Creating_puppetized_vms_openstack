@@ -1,0 +1,103 @@
+#jenkins master
+ai-bs-vm -g parent_HG/jenkins \
+          --foreman-environment you_env \
+         -i "SLC6 CERN Server - x86_64 [2015-02-10]" \
+         --nova-sshkey your_key \
+         --nova-flavor hep2.4 \
+         --landb-mainuser xyz \
+         --landb-responsible xyz \
+         $MACHINE_NAME
+#builder
+ai-bs-vm -g parent_HG/sdt/builder \
+          --foreman-environment you_env \
+         -i "SLC6 CERN Server - x86_64 [2015-02-10]" \
+         --nova-sshkey your_key \
+         --nova-flavor hep2.8 \
+         --nova-attach-new-volume vdc=500GB \
+         --landb-mainuser xyz \
+         --landb-responsible xyz \
+         $MACHINE_NAME
+
+#installer
+ai-bs-vm -g parent_HG/sdt/installer \
+          --foreman-environment you_env \
+         -i cmsbuilder \
+         --nova-sshkey your_key \
+         --nova-flavor hep2.4 \
+         --landb-mainuser xyz \
+         --landb-responsible xyz \
+         $MACHINE_NAME
+
+#builder from image
+ai-bs-vm -g parent_HG/sdt/builder \
+          --foreman-environment you_env \
+         --nova-image cmsbuilder \
+         --nova-sshkey your_key \
+         --nova-flavor hep2.8 \
+         --nova-attach-new-volume vdc=1TB \
+         --landb-mainuser xyz \
+         --landb-responsible xyz \
+         $MACHINE_NAME
+
+#lxr
+ai-bs-vm -g parent_HG/lxr \
+          --foreman-environment you_env \
+         -i "SLC6 CERN Server - x86_64 [2015-02-10]" \
+         --nova-sshkey your_key \
+         --nova-flavor hep2.2 \
+         --nova-attach-existing-volume vdc=f917172c-c864-4900-a1fb-5ad2c42f2d7c \
+         --landb-mainuser xyz \
+         --landb-responsible xyz \
+         $MACHINE_NAME
+
+#lxr-dev
+ai-bs-vm -g parent_HG/lxr \
+          --foreman-environment you_env \
+         -i "SLC6 CERN Server - x86_64 [2015-02-10]" \
+         --nova-sshkey your_key \
+         --nova-flavor hep2.2 \
+         --nova-attach-new-volume vdc=500GB \
+         --landb-mainuser xyz \
+         --landb-responsible xyz \
+         $MACHINE_NAME
+
+
+#cmsinstaller02 using volume type
+ai-bs-vm -g parent_HG/sdt/installer \
+         --foreman-environment you_env \
+         -i "SLC6 CERN Server - x86_64 [2015-02-10]" \
+         --nova-sshkey your_key \
+         --nova-flavor hep2.4 \
+         --nova-attach-new-volume vdc=1TB:type='io1' \
+         --landb-mainuser xyz \
+         --landb-responsible xyz \
+         $MACHINE_NAME
+
+
+ai-bs-vm -g playground/iahmad \
+         -i "CC7 Base - x86_64 [2015-06-12]" \
+         --nova-sshkey iahmad \
+         $MACHINE_NAME
+
+
+#elastic client with kibana new setup
+
+ai-bs-vm -g parent_HG/esmaster \
+          --foreman-environment your_env \
+         -i "SLC6 CERN Server - x86_64 [2015-02-10]" \
+         --nova-sshkey your_key \
+         --nova-flavor hep2.4 \
+         --landb-mainuser xyz \
+         --landb-responsible abc \
+         $MACHINE_NAME
+
+#data node
+ai-bs-vm -g parent_HG/esdata \
+          --foreman-environment your_env \
+         -i "SLC6 CERN Server - x86_64 [2015-02-10]" \
+         --nova-sshkey your_key \
+         --nova-flavor hep2.4 \
+         --nova-attach-new-volume vdc=500GB:type='io1' \
+         --landb-mainuser xyz \
+         --landb-responsible abc \
+         $MACHINE_NAME
