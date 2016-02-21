@@ -1,0 +1,13 @@
++------------+-------------------------------------------------+
+| Redirector | Description                                     |
++------------+-------------------------------------------------+
+| [n]>       | Redirect stdout, n is 1 by default              |
+| [n]>>      | Append redirection of stdout. n is 1 by default |
+| [n]<       | Redirect stdin, n is 0 by default               |
+| <<[-]      | Here document, read from stdin until delimiter  |
+| <<<        | Here string, read from stdin                    |
+| 2>&1       | Redirect stderr to stdout                       |
+| &>         | Redirect stderr and stdout to the same stream   |
+| &>>        | Redirect stderr and stdout to the same stream   |
+| |          | Redirect stdout to stdin                        |
++------------+-------------------------------------------------+
