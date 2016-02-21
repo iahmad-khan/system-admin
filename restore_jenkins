@@ -1,0 +1,37 @@
+#Verion 1.0 , Date: Fri Oct 23 , 2015
+#Restoring Jenkins server from backup:
+#create the machine and put it in foreman host group/environment
+ssh aiadm@cern.ch
+source cmssdtbashrc.sh
+MACHINE_NAME=cmsbuild07
+ai-bs-vm -g vocmssdt/sdt/builder \
+          --foreman-environment cmssdt_test \
+         -i "SLC6 CERN Server - x86_64 [2015-02-10]" \
+         --nova-sshkey cmsbuild \
+         --nova-flavor hep2.8 \
+         --nova-attach-new-volume vdc=1TB \
+         --landb-mainuser cms-service-sdt \
+         --landb-responsible cms-service-sdt \
+         $MACHINE_NAME
+
+#ssh cms-jenkins-test from lxplus , when machine is fully running
+ssh root@<jenkins ip>
+
+#wite a file system on /dev/vdc
+
+mkfs.ext4 /dev/vdc
+#rerun puppet agent
+puppet agent -t
+
+#stop iptables to browse jenkins
+service iptables stop
+#test jenkins from url
+http://<host>:8080/jenkins
+
+#stop jenkins service
+service jenkins stop
+
+#resotre
+#copy and extract (cd into /var/lib/jenkins and do tar -xzvf <backup.tar.zg> <.> ) backup to jenkins home from afs/cern backup (check permissi$
+#start and restart jenkins if needed
+service jenkins start
