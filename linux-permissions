@@ -1,0 +1,10 @@
++------------+----------+--------------+-------------------------+
+| Permission  | Numeric | Files        | Directories             |
++-------------+---------+--------------+-------------------------+
+| Read        |    4    | Open         | List                    |
+| Write       |    2    | Modify       | File operations         |
+| Execute     |    1    | Run          | Enter                   |
+| SUID        |    4    | Run as owner | N/A                     |
+| SGID        |    2    | Run as group | Inherit group ownership |
+| Sticky      |    1    | N/A          | Delete own files        |
++-------------+---------+--------------+-------------------------+
