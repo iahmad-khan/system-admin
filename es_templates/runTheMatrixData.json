@@ -1,0 +1,31 @@
+#a template is used for elasticsearch mapping fields to data types and set its attributes
+#sample template
+#deploye it using curl
+#the template will apply to all new indexes specified in pattern
+#usage:
+#curl -XPUT http://you-elastic-fqdn-or-ip:9200/_template/template_name -d@template_file_name.json
+
+{
+  "template" : "*ib-matrix*",
+  "settings" : {
+      "number_of_shards" : 1
+  },
+  "mappings": {
+    "runTheMatrix-data": {
+      "properties": {
+        "workflow":{"type":"string", "index": "not_analyzed"},
+        "release":{"type":"string", "index": "not_analyzed"},
+        "architecture":{"type":"string", "index": "not_analyzed"},
+        "hostname":{"type":"string", "index": "not_analyzed"},
+        "timestp":{"type":"date", "format" : "yyyy-MM-dd HH:mm:ss"},
+        "errors": {
+          "properties": {
+            "kind": {"type": "string", "index": "not_analyzed"},
+            "error": {"type": "string"}
+          }
+	},
+	"exception": {"type": "string", "index": "not_analyzed"}
+      }
+    }
+  }
+}
