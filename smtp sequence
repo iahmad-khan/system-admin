@@ -1,0 +1,21 @@
+/usr/lib/sendmail -v someuser@pobox.com < /tmp/mtest
+someuser@pobox.com... Connecting to mx1b.pobox.com. via esmtp...
+220 wormwood.pobox.com ESMTP Postfix
+>>> EHLO myhost.3x.com
+250-wormwood.pobox.com
+250-PIPELINING
+250-SIZE 10240000
+250-ETRN
+250 8BITMIME
+>>> MAIL From: SIZE=51
+250 Ok
+>>> RCPT To:
+250 Ok
+>>> DATA
+354 End data with .
+>>> .
+250 Ok: queued as 0E3EA1D216
+someuser@pobox.com... Sent (Ok: queued as 0E3EA1D216)
+Closing connection to mx1b.pobox.com.
+>>> QUIT
+221 Bye
