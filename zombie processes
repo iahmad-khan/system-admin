@@ -1,0 +1,76 @@
+Processes are a very complex but important topic for understanding how Linux works. Covering all details about process management in Linux wouldn't be possible for one blog post, but let's have a bit of informative fun with process creation and especially with their deletion. It's Halloween and which topic could be more appropriate than birth, death and undeads? ;-)
+The beginning of all: process 0
+
+Most people think init is the mother of all processes, but that's not 100% correct. Also init is created by a process, which is called the idle process or swapper process. This process 0 actually is a kernel thread, which is created once the kernel enters its initialization phase. This process initializes data structures needed by the kernel and then creates a new kernel thread called process 1, which is the init process. Once this is done, process 0 executes cpu_idle(), henceforth it's only executed by the scheduler when no other process is running.
+The init process
+
+As yet the new kernel thread shares all data structures with process 0. The following call of the init() function finishes initialization of the kernel and loads the init executable from disk into the current process invoking the execve() system call. Once the current process's data structure is replaced with the new program, it becomes a regular process with PID 1, known as process 1 or init, respectively.
+Process creation and why process and program are not the same
+
+At first we have to ensure that we use the right vocabulary. Linux distinguishes between programs and processes. A process is a slot for executing a program. Therefore, it's a program in execution whereas a program is just a set of commands, which can be executed in a process. This also means that a process doesn't have to belong to one specific program and actually, new processes are always created by copying it and replacing the program of the new child process. New processes are children of init, but also each other program can create its own children. A new program can be loaded into the new process by execve(). To spawn new processes, three main syscalls are used:
+
+    vfork(): This creates a copy of the current process, which shares all data structures with the parent process. The parent process itself is suspended until the child terminates. This syscall is hardly used because it blocks the parent process and can lead to data inconsistencies due to data sharing.
+    clone(): clone() creates a new “lightweight” process. Lightweight processes are Linux's implementation of multithreading. With clone() a new process is created within a thread group. All processes within this group synchronize their data with each other and can be executed concurrently. Technically, lightweight processes have different PIDs, but due to the UNIX standard the PID returned by getpid() is the thread group ID which is equal to the PID of the first lightweight process in that group.
+    fork(): This syscall is mostly used for spawning new processes. Created children are more or less independent from their parent processes and have their own memory pages. fork() returns 0 if the current execution flow is in the child process otherwise the child's PID.
+
+Copying processes can be very expensive and therefore Linux uses copy-on-write mechanisms. Once a new process is created, both, parent and child, share the same physical memory until one of them does some modification. The modified data is then written to new physical memory pages, so the data remains unchanged for the second process.
+Death of a process
+
+When a process has finished, it dies. That means that the kernel can reuse all the memory used by that process. But the process does not vanish immediately. Its process descriptor (which contains information about this process) is still kept in memory.
+Zombie processes
+
+Woohoo, it's zombie time! When a process dies, its process status is set to EXIT_ZOMBIE and the parent is notified with a SIGCHLD signal that one of its children has died. The zombie process will remain in memory until the parent reacts with a wait4() or wait()/waitpid() syscall. Normally, this happens immediately, so the kernel knows that everything is fine, the parent has noticed and got all information it probably needs and the process can be cleaned up. Such a process is then set to EXIT_DEAD and cleaned up. But in some situation the parent doesn't invoke a wait4() syscall. In that case the zombie process will stay in memory forever. Most of the time this happens due to faulty programming. You can examine zombie processes on your system with top. The number of zombies in memory is listed in the upper right corner. Another way is to use ps, which lists all processes running right at the moment. Zombie processes are marked with Z in the STAT column and have <defunct> appended to their command listing. To list all zombies, run
+
+ps axo user,pid,ppid,command,s | grep -w Z$
+
+That lists all zombies with owner, process id, parent id, command and status (always Z).
+Orphan processes
+
+You may ask how to clean up zombie processes. Well, you can't kill them since they're already dead. There are only two ways to get rid of those. The first is to send a SIGCHLD signal manually to the parent
+
+kill -CHLD <parent-id>
+
+but in most cases this is not successful because the parent just ignores the signal. Another way is to make the zombie an orphan. Orphan processes are processes which don't have parents anymore. Those processes are then assigned to init, which becomes their new parent. init regularly invokes wait() calls and cleans up all orphan processes. So when you kill the parent process, you kill all zombie children indirectly.
+The problems with zombies
+
+Zombies shouldn't be a big problem since they hardly consume memory because only the process descriptor is kept in memory. However, if, e.g., a server program creates zombies, they could become a real danger if your system is flooded with requests. Another problem is that Linux has a limited range of PID numbers. The maximum PID on 32-bit systems is 32,767, so at 32,768 the system will reset the counter and try to allocate free numbers from the beginning. But if all PIDs are used, no new processes can be spawned. The zombie processes reserve all free PIDs, thus Linux can't recycle them. On 64-bit systems zombies will take a little longer to pinch all PIDs since the maximum number can be enlarged up to 2²², which is 4,194,304 (i.e., the maximum PID is 4,194,303). The administrator can set the max PID by changing the value in /proc/sys/kernel/pid_max. By default this is set to 32,768, also on 64-bit systems.
+
+You see: even though zombies are not a problem in most cases they can endanger your system stability when they become too many. So keep them in mind and file bug reports if an application constantly produces zombies.
+The fun part: building a zombie factory
+
+It's Halloween, so let's quickly create a zombie factory program. This is nothing of use, just a little Halloween joke. The following C code creates new processes in an infinite loop in interval of 1 second. They shortly drool and slobber and then they die and persist in memory as zombies.
+
+#include <stdlib.h>
+#include <stdio.h>
+
+int main() {
+        pid_t pid;
+        int i; 
+    
+        for (i = 0; ; i++)  {  
+                pid = fork();
+    
+                if (pid > 0) {
+                        // parent process
+                        printf("Zombie #%d born:\n", i + 1);
+                        sleep(1);
+                } else {
+                        // child process: drivel then exit
+                        printf("    *drool* Boooo! Arrgghh! *slobber*\n");
+                        exit(0);
+                }  
+        }  
+    
+        return 0; 
+}
+
+Now save this program as zombie.c on your hard drive, compile and execute it:
+
+cc ./zombie.c -o ./zombie
+./zombie
+
+Then open another terminal and watch your newborn zombies:
+
+watch -n 1 "ps u -C zombie"
+
+Once your zombie army is large enough, kill the program with Ctrl+C (SIGINT) or SIGTERM. That's it! Have fun with it and scare all your Nerd mates. ;-)
