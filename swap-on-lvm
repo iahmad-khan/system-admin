@@ -1,0 +1,33 @@
+#see where is your swap partition and its size
+swapon -s
+
+#if it doesnt directly tell u the lv then use these commands
+dmsetup info /dev/dm-0
+pvdisplay
+vgdisplay
+lvdisplay
+
+once you know the lv (here LogVol01) and disk (here /dev/vda2) then resize it as follows
+
+# Prepare the partition
+pvresize /dev/vda2
+
+# Prepare the swap
+swapoff -v /dev/VolGroup00/LogVol01
+
+# Make the swap half of the memory
+SWAP_SIZE=`cat /proc/meminfo  | grep MemTotal  | awk '{print $2}' | sed 's|......$||' | xargs -i echo '({}+1)/2' | bc`
+lvresize /dev/VolGroup00/LogVol01 -L ${SWAP_SIZE}G
+
+# Remount it
+mkswap /dev/VolGroup00/LogVol01
+swapon -v /dev/VolGroup00/LogVol01
+
+# Increase root to the remaining size
+lvextend -l +100%FREE /dev/mapper/VolGroup00-LogVol00
+
+# Resize the fs
+resize2fs /dev/mapper/VolGroup00-LogVol00
+
+# Take note that we increased the disk so it wont run it again
+touch /etc/volume_expanded
