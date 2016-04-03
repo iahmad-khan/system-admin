@@ -1,0 +1,71 @@
+1. Visit the Oracle site and obtain the latest repository configuration import for the most current version of MySQL Community Edition in the 5.x branch. Run the appropriate RPM command to import and install that repository configuration file.
+
+    [user@linuxacademy:~]$ sudo rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm
+
+     
+
+     
+
+ 
+
+2. Update your yum repository cache. Execute the appropriate command to install the "mysql-community-edition" package.
+
+    [user@linuxacademy:~]$ sudo yum -y upgrade && sudo yum -y install mysql-community-edition
+
+    (Output)
+
+    ...packages needing update here, repository caches updating...
+
+    ...mysql-community-edition and dependencies are installed/updated here...
+
+    (Output)
+
+     
+
+3. Using the appropriate service management commands, set the MySQL server daemon to start automatically on boot. After that, start the MySQL server.
+
+    [user@linuxacademy:~]$ sudo systemctl enable mysqld
+
+    [user@linuxacademy:~]$ sudo systemctl start mysqld
+
+ 
+
+4. Once MySQL has started, secure the installation using the appropriate MySQL binary command in /usr/bin. Answer the questions posed to obtain the following results:
+
+    Set the root password
+    Remove anonymous users
+    Disallow remote root login
+    Remove test users and database
+    Reload the privileges
+
+    [user@linuxacademy:~]$ sudo /usr/bin/mysql_secure_installation
+
+    (Output)
+
+    Questions posed, answer as indicated in the instructions above
+
+    (Output)
+
+     
+
+5. Verify that you can login to the database instance using the root account credentials provided in Step #4.
+
+    [user@linuxacademy:~]$ mysql -u root -p
+
+    (Output)
+
+    Enter password:
+    Welcome to the MySQL monitor.  Commands end with ; or \g.
+    Your MySQL connection id is 14
+    Server version: 5.6.26 MySQL Community Server (GPL)
+
+    Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+
+    Oracle is a registered trademark of Oracle Corporation and/or its
+    affiliates. Other names may be trademarks of their respective
+    owners.
+
+    Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+    mysql>
+    (Output)
