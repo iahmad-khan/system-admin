@@ -230,3 +230,6 @@ And here is what a Logwatch report can look like:
     logwatch-7.3.6-49.el6.noarch
 
  ---------------------- yum End -------------------------
+ 
+ 
+ using logwatch for other services , see the services names in /services directory
