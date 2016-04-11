@@ -1,0 +1,247 @@
+1. Find the PostgreSQL 9.4 repository RPM from the appropriate website and either download and install it using the appropriate package management commands or install directly from the website link.
+
+    [root@tcox6 ~]# rpm -Uvh http://yum.postgresql.org/9.4/redhat/rhel-7-x86_64/pgdg-centos94-9.4-1.noarch.rpm
+
+    Retrieving http://yum.postgresql.org/9.4/redhat/rhel-7-x86_64/pgdg-centos94-9.4-1.noarch.rpm
+
+    warning: /var/tmp/rpm-tmp.5XreQL: Header V4 DSA/SHA1 Signature, key ID 442df0f8: NOKEY
+
+    Preparing...                          ################################# [100%]
+
+    Updating / installing...
+
+       1:pgdg-centos94-9.4-1              ################################# [100%]
+
+ 
+
+ 
+
+2. Update your system after installing the repository update in Step #1, applying any necessary updates.
+
+    [root@tcox6 ~]# yum update
+
+    Loaded plugins: fastestmirror
+
+    base                                                                                                                                                                                      | 3.6 kB  00:00:00
+
+    extras                                                                                                                                                                                    | 3.4 kB  00:00:00
+
+    pgdg94                                                                                                                                                                                    | 3.6 kB  00:00:00
+
+    updates                                                                                                                                                                                   | 3.4 kB  00:00:00
+
+    (1/4): pgdg94/7/x86_64/group_gz                                                                                                                                                           |  331 B  00:00:00
+
+    (2/4): pgdg94/7/x86_64/primary_db                                                                                                                                                         | 155 kB  00:00:00
+
+    (3/4): extras/7/x86_64/primary_db                                                                                                                                                         |  74 kB  00:00:00
+
+    (4/4): updates/7/x86_64/primary_db                                                                                                                                                        | 3.3 MB  00:00:01
+
+    Determining fastest mirrors
+
+     * base: mirrors.advancedhosters.com
+
+     * extras: mirror.es.its.nyu.edu
+
+     * updates: mirror.es.its.nyu.edu
+
+    Resolving Dependencies
+
+    (NOTE: Packages will install here based on acceptance of download and installation...)
+
+ 
+
+3. Using the appropriate package management command, install the PostgreSQL 9.4 server and associated contribed modules and utilities. Once installed, run the database initialization routine before starting the database.
+
+    [root@tcox6 ~]# yum install postgresql94-server postgresql94-contrib
+
+    Loaded plugins: fastestmirror
+
+    Loading mirror speeds from cached hostfile
+
+     * base: mirrors.advancedhosters.com
+
+     * extras: mirror.es.its.nyu.edu
+
+     * updates: mirror.es.its.nyu.edu
+
+    Resolving Dependencies
+
+    --> Running transaction check
+
+    ---> Package postgresql94-contrib.x86_64 0:9.4.4-1PGDG.rhel7 will be installed
+
+    --> Processing Dependency: postgresql94-libs(x86-64) = 9.4.4-1PGDG.rhel7 for package: postgresql94-contrib-9.4.4-1PGDG.rhel7.x86_64
+
+    --> Processing Dependency: postgresql94(x86-64) = 9.4.4-1PGDG.rhel7 for package: postgresql94-contrib-9.4.4-1PGDG.rhel7.x86_64
+
+    --> Processing Dependency: libpq.so.5()(64bit) for package: postgresql94-contrib-9.4.4-1PGDG.rhel7.x86_64
+
+    ---> Package postgresql94-server.x86_64 0:9.4.4-1PGDG.rhel7 will be installed
+
+    --> Running transaction check
+
+    ---> Package postgresql94.x86_64 0:9.4.4-1PGDG.rhel7 will be installed
+
+    ---> Package postgresql94-libs.x86_64 0:9.4.4-1PGDG.rhel7 will be installed
+
+    --> Finished Dependency Resolution
+
+    Dependencies Resolved
+
+    =================================================================================================================================================================================================================
+
+     Package                                                   Arch                                        Version                                                 Repository                                   Size
+
+    =================================================================================================================================================================================================================
+
+    Installing:
+
+     postgresql94-contrib                                      x86_64                                      9.4.4-1PGDG.rhel7                                       pgdg94                                      609 k
+
+     postgresql94-server                                       x86_64                                      9.4.4-1PGDG.rhel7                                       pgdg94                                      3.9 M
+
+    Installing for dependencies:
+
+     postgresql94                                              x86_64                                      9.4.4-1PGDG.rhel7                                       pgdg94                                      1.0 M
+
+     postgresql94-libs                                         x86_64                                      9.4.4-1PGDG.rhel7                                       pgdg94                                      208 k
+
+    Transaction Summary
+
+    =================================================================================================================================================================================================================
+
+    Install  2 Packages (+2 Dependent packages)
+
+    Total download size: 5.7 M
+
+    Installed size: 25 M
+
+    Is this ok [y/d/N]: y
+
+    Downloading packages:
+
+    (1/4): postgresql94-contrib-9.4.4-1PGDG.rhel7.x86_64.rpm                                                                                                                                  | 609 kB  00:00:00
+
+    (2/4): postgresql94-9.4.4-1PGDG.rhel7.x86_64.rpm                                                                                                                                          | 1.0 MB  00:00:00
+
+    (3/4): postgresql94-libs-9.4.4-1PGDG.rhel7.x86_64.rpm                                                                                                                                     | 208 kB  00:00:00
+
+    (4/4): postgresql94-server-9.4.4-1PGDG.rhel7.x86_64.rpm                                                                                                                                   | 3.9 MB  00:00:00
+
+    -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    Total                                                                                                                                                                            5.5 MB/s | 5.7 MB  00:00:01
+
+    Running transaction check
+
+    Running transaction test
+
+    Transaction test succeeded
+
+    Running transaction
+
+      Installing : postgresql94-libs-9.4.4-1PGDG.rhel7.x86_64                                                                                                                                                    1/4
+
+      Installing : postgresql94-9.4.4-1PGDG.rhel7.x86_64                                                                                                                                                         2/4
+
+      Installing : postgresql94-server-9.4.4-1PGDG.rhel7.x86_64                                                                                                                                                  3/4
+
+      Installing : postgresql94-contrib-9.4.4-1PGDG.rhel7.x86_64                                                                                                                                                 4/4
+
+      Verifying  : postgresql94-9.4.4-1PGDG.rhel7.x86_64                                                                                                                                                         1/4
+
+      Verifying  : postgresql94-server-9.4.4-1PGDG.rhel7.x86_64                                                                                                                                                  2/4
+
+      Verifying  : postgresql94-libs-9.4.4-1PGDG.rhel7.x86_64                                                                                                                                                    3/4
+
+      Verifying  : postgresql94-contrib-9.4.4-1PGDG.rhel7.x86_64                                                                                                                                                 4/4
+
+    Installed:
+
+      postgresql94-contrib.x86_64 0:9.4.4-1PGDG.rhel7                                                         postgresql94-server.x86_64 0:9.4.4-1PGDG.rhel7
+
+    Dependency Installed:
+
+      postgresql94.x86_64 0:9.4.4-1PGDG.rhel7                                                              postgresql94-libs.x86_64 0:9.4.4-1PGDG.rhel7
+
+    Complete!
+
+    [root@tcox6 ~]# /usr/pgsql-9.4/bin/postgresql94-setup initdb
+
+    Initializing database ... OK
+
+ 
+
+4. Using the appropriate SYSTEMD service management commands, enable the PostgreSQL 9.4 server to run on system start and then start the database server.
+
+    [root@tcox6 ~]# systemctl enable postgresql-9.4
+
+    ln -s '/usr/lib/systemd/system/postgresql-9.4.service' '/etc/systemd/system/multi-user.target.wants/postgresql-9.4.service'
+
+    [root@tcox6 ~]# systemctl start postgresql-9.4
+
+  
+
+5. Check to see if SELinux is being run in enforced mode on your system. If so, run the command to allow external HTTP DB connections to the server through SELinux configuration.
+
+    [root@tcox6 ~]# cat /etc/selinux/config
+
+     
+
+    # This file controls the state of SELinux on the system.
+
+    # SELINUX= can take one of these three values:
+
+    #     enforcing - SELinux security policy is enforced.
+
+    #     permissive - SELinux prints warnings instead of enforcing.
+
+    #     disabled - No SELinux policy is loaded.
+
+    SELINUX=enforcing
+
+    # SELINUXTYPE= can take one of these two values:
+
+    #     targeted - Targeted processes are protected,
+
+    #     minimum - Modification of targeted policy. Only selected processes are protected.
+
+    #     mls - Multi Level Security protection.
+
+    SELINUXTYPE=targeted
+
+    [root@tcox6 ~]# setsebool -P httpd_can_network_connect_db 1
+
+ 
+
+ 
+
+6. Become the 'postgres' user and run the 'psql' command. Once at the database prompt, set a password for the 'psql' user. 
+
+    [root@tcox6 ~]# su - postgres
+
+    Last login: Wed Sep  2 13:35:21 UTC 2015 on pts/0
+
+    -bash-4.2$ psql
+
+    psql (9.4.4)
+
+    Type "help" for help.
+
+     
+
+    postgres=# \password postgres
+
+    Enter new password:
+
+    Enter it again:
+
+    postgres=# quit
+
+    postgres-# \q
+
+    -bash-4.2$ exit
+
+    logout
