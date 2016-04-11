@@ -1,0 +1,109 @@
+1. A compatible PostgreSQL version is available in the default repositories. Install the PostgreSQL server from the repository along with it's associate contributed utilities.
+
+    root@tcox5:~# apt-get install postgresql postgresql-contrib
+
+    Reading package lists... Done
+
+    Building dependency tree
+
+    Reading state information... Done
+
+    The following extra packages will be installed:
+
+      libossp-uuid16 libpq5 postgresql-9.3 postgresql-client-9.3
+
+      postgresql-client-common postgresql-common postgresql-contrib-9.3
+
+    Suggested packages:
+
+      uuid oidentd ident-server locales-all postgresql-doc-9.3 libdbd-pg-perl
+
+    The following NEW packages will be installed:
+
+      libossp-uuid16 libpq5 postgresql postgresql-9.3 postgresql-client-9.3
+
+      postgresql-client-common postgresql-common postgresql-contrib
+
+      postgresql-contrib-9.3
+
+    0 upgraded, 9 newly installed, 0 to remove and 4 not upgraded.
+
+    Need to get 4,099 kB of archives.
+
+    After this operation, 17.5 MB of additional disk space will be used.
+
+    Do you want to continue? [Y/n] y
+
+    Get:1 http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ trusty/main libossp-uuid16 amd64 1.6.2-1.3ubuntu1 [29.6 kB]
+
+    Get:2 http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ trusty-updates/main libpq5 amd64 9.3.9-0ubuntu0.14.04 [81.4 kB]
+
+    Get:3 http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ trusty-updates/main postgresql-client-common all 154ubuntu1 [25.4 kB]
+
+    Get:4 http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ trusty-updates/main postgresql-client-9.3 amd64 9.3.9-0ubuntu0.14.04 [783 kB]
+
+    Get:5 http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ trusty-updates/main postgresql-common all 154ubuntu1 [103 kB]
+
+    Get:6 http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ trusty-updates/main postgresql-9.3 amd64 9.3.9-0ubuntu0.14.04 [2,666 kB]
+
+    Get:7 http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ trusty-updates/main postgresql all 9.3+154ubuntu1 [5,038 B]
+
+    Get:8 http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ trusty-updates/main postgresql-contrib-9.3 amd64 9.3.9-0ubuntu0.14.04 [401 kB]
+
+    Get:9 http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ trusty-updates/main postgresql-contrib all 9.3+154ubuntu1 [5,058 B]
+
+    (NOTE: Installation will continue here...)
+
+ 
+
+2. Become the user 'postgres'. Run the 'psql' command and once you are at the DB prompt, run the appropriate command to set a password for the 'postgres' user in the database.
+
+    root@tcox5:/etc/selinux# su - postgres
+
+    postgres@tcox5:~$ psql
+
+    psql (9.3.9)
+
+    Type "help" for help.
+
+     
+
+    postgres=# \password postgres
+
+    Enter new password:
+
+    Enter it again:
+
+ 
+
+3. While at the DB command prompt, create the 'adminpack' extension in the database. Log out of the DB prompt.
+
+    postgres=# CREATE EXTENSION adminpack;
+
+    CREATE EXTENSION
+
+  
+
+4. Using the appropriate service management command, restart the PostgreSQL database.
+
+    root@tcox5:/etc/selinux# service postgresql restart
+
+     
+
+     * Restarting PostgreSQL 9.3 database server
+
+    root@tcox5:/etc/selinux# ps aux | grep post
+
+    postgres  3811  0.0  1.5 246460 16180 ?        S    14:02   0:00 /usr/lib/postgresql/9.3/bin/postgres -D /var/lib/postgresql/9.3/main -c config_file=/etc/postgresql/9.3/main/postgresql.conf
+
+    postgres  3813  0.0  0.3 246604  3168 ?        Ss   14:02   0:00 postgres: checkpointer process
+
+    postgres  3814  0.0  0.2 246460  2668 ?        Ss   14:02   0:00 postgres: writer process
+
+    postgres  3815  0.0  0.1 246460  1656 ?        Ss   14:02   0:00 postgres: wal writer process
+
+    postgres  3816  0.0  0.2 247320  2996 ?        Ss   14:02   0:00 postgres: autovacuum launcher process
+
+    postgres  3817  0.0  0.1 102136  1760 ?        Ss   14:02   0:00 postgres: stats collector process
+
+    root      3944  0.0  0.0  10464   936 pts/1    S+   14:13   0:00 grep --color=auto post
