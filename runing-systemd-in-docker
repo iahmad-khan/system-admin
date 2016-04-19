@@ -1,0 +1,112 @@
+
+Running systemd within a Docker Container
+Posted by rhatdan on May 5, 2014
+
+I have been working on Docker for the last few months, mainly getting SELinux added to help CONTAIN Containers.
+
+libvirt-sandbox – virt-sandbox-service
+
+For the last couple of years I was working on a different container technology using libvirt-lxc, in addition to my regular SELinux job. I built the virt-sandbox-service tool which would carve up your host system into a bunch of service containers.  My idea was to run systemd within a container and then systemd would start services the same way inside a container as it would outside the container.  Running a virt-sandbox-service container with an Apache unit file, you only see systemd, journald and the httpd processes running.  Very little overhead, and creating a service container was simple, you only needed to specify the unit file of the service you wanted to put in the container.
+
+Docker stopped virt-sandbox-service development:
+
+I put virt-sandbox-service on the backburner when it became obvious that the community was moving towards Docker.
+
+While working with Docker, I looked at the great work that Scott Collier was doing for getting services to run within a container.  Scott provides the fedora-dockerfiles package in docker with lots of “Dockerfile” examples. You can build Docker images by running “docker build” on these examples.
+
+It seemed a little difficult, and wondered if getting systemd to run within a docker container, as I did with virt-sandbox-service, might make this simpler.
+
+The Docker Model suggests that it is better to run a single service within a container.  If you wanted to build an application that required an Apache service and a MariaDB database, you should generate two different containers.   Some people insist on running multiple services within a container, and for this Docker suggested using the supervisord tool.  In RHEL we do not want to support supervisord, since it is written in Python, and do not want to pull a Python requirement into containers, and it is just a package used to monitor multiple services.  We already have a tool for monitoring multiple services called systemd.
+
+Can systemd run within a Docker container?
+
+Anyways, I went off to investigate running systemd in a docker container.
+
+First thing I noticed was a few bug reports by others who had failed.
+
+    https://github.com/dotcloud/docker/issues/3629
+
+    https://bugzilla.redhat.com/show_bug.cgi?id=1033604
+
+After investigating the failures, I found that systemd requires CAP_SYS_ADMIN capability but Docker drops that capability in the non privileged containers, in order to add more security.  This means for now you have to run systemd within a privileged container since privileged containers do not drop any capabilities.  There is a patch upstream to allow users to add capabilities to a docker container. Once this patch gets merged, I think you would be able to run in a non privileged container by turning on the CAP_SYS_ADMIN capability.
+
+Running a privileged container got me a little further but systemd was still crashing within docker.  Turns out systemd insists on looking at the cgroup file system within a container.  I added the cgroup file system to the container  using the Volume mount
+
+–v /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+which allows systemd to look at the cgroup but only in readonly mode.
+
+Systemd ran fully within the container.
+
+But  systemd starts tons of services in the container like udev, getty logins, …  I only want to run systemd, journald, and httpd within the container, I had to stop systemd from starting these other services.
+
+Looking at what I had done to prevent this in virt-sandbox-service, I saw that I needed to remove unit file links from the /lib/systemd/system/*wants/ and  /etc/systemd/system/*wants/ directories within a systemd based docker container.  Removing these links got me to a systemd container image that would only run systemd and journald.
+
+SUCCESS
+
+Here is the Dockerfile I wrote to implement a systemd based docker image.
+
+    FROM fedora:rawhide
+    MAINTAINER “Dan Walsh” <dwalsh@redhat.com>
+    ENV container docker
+    RUN yum -y update; yum clean all
+    RUN yum -y install systemd; yum clean all; \
+    (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); \
+    rm -f /lib/systemd/system/multi-user.target.wants/*;\
+    rm -f /etc/systemd/system/*.wants/*;\
+    rm -f /lib/systemd/system/local-fs.target.wants/*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+    rm -f /lib/systemd/system/basic.target.wants/*;\
+    rm -f /lib/systemd/system/anaconda.target.wants/*;
+    VOLUME [ “/sys/fs/cgroup” ]
+    CMD [“/usr/sbin/init”]
+
+Notice my DockerFile is using Fedora Rawhide, but this should also work on a RHEL7 or Fedora 20 system.  systemd likes to know that it is running within a container, and it checks the container environment variable for this.  The ENV will cause the “container” environment variable to be set.  Next make sure the image is up to date by running a yum -y update, and cleanup the cache for this image layer.  Next, install the systemd package, and start  removing all of the wants link files.  Finally tell the image it requires the /sys/fs/cgroup volume mounted into it and execute the init command.
+
+I use this command to build the image in the directory containing the Dockerfile
+
+    docker build -t systemd_rawhide .
+
+Building an Apache Container Image based on the systemd image.
+
+Now I want to setup a httpd image based on this image, so I create a new Dockerfile.
+
+    FROM systemd_rawhide
+    RUN yum -y install httpd; yum clean all; systemctl enable httpd.service
+    EXPOSE 80
+    CMD [“/usr/sbin/init”]
+
+Notice how simple this docker file is to use based on the systemd_rawhide image.  You only have to install the service you want and enable it.  Since this service binds to port 80, you need to specify this in the image.  Finally since systemd will be managing my service within the container you specify /usr/sbin/init as the command to run within the container.
+
+In a different directory, put the new Dockerfile and build the image
+
+    docker build -t httpd_rawhide .
+
+Running and testing the Apache Image. 
+
+Now to test the htttpd application container,  start it by executing:
+
+    docker run –privileged -ti -v /sys/fs/cgroup:/sys/fs/cgroup:ro -p 80:80 httpd_rawhide
+
+Note that I bind the hosts port 80 to the container port 80.  You can test it by executing:
+
+    curl http://localhost
+
+This command should bring you the default Apache page from inside the container.
+
+Running multiple services within a systemd based container image.
+
+If you wanted to run multiple services, you can just install multiple services within the Dockerfile.
+
+    RUN yum -y install httpd mariadb ; yum clean all; systemctl enable httpd.service mariadb.service
+
+systemd will start the httpd and mariadb service when you start the container.  Please test and give me feedback on how this works for you.
+
+ 
+
+Also posted on my personal blog:
+
+http://rhatdan.wordpress.com/2014/04/30/running-systemd-within-a-docker-container/
+
+ 
