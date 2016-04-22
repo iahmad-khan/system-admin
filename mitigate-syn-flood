@@ -1,0 +1,141 @@
+Distributed Denial of Service (DDoS) attacks are becoming increasingly commonplace as business becomes more and more dependent
+on delivering services over the Internet.  
+One of the most common types of DDoS attacks is the well-known SYN-flood attack. It is a basic end-host resource attack 
+designed to bring your server to its knees.  As a result, your server is unable to properly handle any new incoming connection 
+requests.
+
+Recently at DevConf.cz 2014, I gave a talk focusing on how you can survive TCP SYN-flooding attacks by implementing 
+some recently developed kernel level Netfilter/iptables defense mechanisms. In this post I will provide a more condensed 
+version of the talk highlighting how you can use these same techniques to protect your servers running Red Hat Enterprise
+Linux 7 Beta.
+
+It’s important to note that while the following DDoS defense features are available in RHEL 7 Beta, they’re not enabled
+by default.  To take advantage of them, you will first need to enable some settings including a few additional
+iptables rules to your existing firewall ruleset.
+
+Why is the SYN-flood hurting the kernel?
+
+The basic TCP scalability problem for the Linux kernel is related to how many new connections can be created per second. 
+This directly relates to a lock per socket when in the “listen” state. For “established” state connections, it can scale 
+very well.
+
+The “listen” state lock is encountered not only with SYN packets, but also other initial connection state packets
+like SYN-ACK and ACK packets (the last three-way handshake (3WHS) packet). In the flooding attack scenario, the attacker
+is sending fake packets aimed at hitting the “listen” state locking problem. As such, we need a mechanism to filter 
+out these fake initial connection attempts before the socket enters the “listen” state lock and blocks new incoming connections.
+
+Basic conntrack filtering
+
+With Netfilter’s connection tracking system (conntrack), we can start filtering out false SYN-ACK and
+ACK packets before they hit the “listen” state lock. This is something, which has been possible for a 
+long time, but is not enabled by default.
+
+All you need is these two commands:
+
+# iptables -A INPUT -m state –state INVALID -j DROP
+
+# /sbin/sysctl -w net/netfilter/nf_conntrack_tcp_loose=0
+
+The first iptables rule will catch packets that the connection tracking system has categorized as “INVALID” and not part 
+of a known connection state.
+
+The second sysctl setting will make the connection tracking system more strict in this categorization.  
+Specifically this will (among other things) help catch ACK-floods.
+
+What about performance?
+
+The result is a 20x increase in deflecting SYN-ACK and ACK based attacks.
+
+Netfilter’s conntrack has had a bad reputation for being slow. While this was true in the “early-days”, it
+now offers excellent scalability for established conntracks.
+
+The matching against existing conntrack entries is very fast and completely scalable. The conntrack system actually
+does lockless RCU (read-copy update) lookups for existing connections.
+
+Essentially, this solves all other TCP-flooding packets except SYN-flooding.
+
+Why doesn’t this solve the SYN-flooding?
+
+The conntrack system actually has a scalability problem (like the “listen” lock) when it comes to creating (or deleting) 
+connections, which the SYN-flood will hit.
+
+Even after fixing the conntrack lock, the SYN packets will still be sent to the socket causing the “listen” socket 
+lock to occur. The normal mitigation technique is to send SYN-cookies and avoid creating any state until the SYN-ACK 
+packet is seen.
+
+Unfortunately, SYN-cookies are sent under the same “listen” state lock, so the mitigation does not solve the scalability 
+issue. How these limitations can be worked around will be discussed later.
+
+What’s new in Red Hat Enterprise Linux 7 Beta?
+
+During Netfilter Workshop 2013, Patrick McHardy, Martin Topholm and I got the idea of addressing this in the firewall 
+layer in what is called “Network-Based Countermeasures”.  This gave birth to the “SYNPROXY” iptables module and related 
+changes in the Netfilter core for handling this; features now available in Red Hat Enterprise Linux 7 Beta.
+
+The SYNPROXY module works around the two scalability issues mentioned above. First, it does parallel SYN-cookies,
+and second, it does not create a conntrack entry before the SYN-ACK packet is received thus avoiding the conntrack 
+new connections lock.
+
+The SYNPROXY module can be used on localhost as well as protecting hosts behind the firewall. Once the initial
+connection is established the normal conntrack system will take over and do all the needed translations 
+(reusing part of the NAT code).
+
+Testing on localhost connections showed a 10x performance benefit for deflecting SYN-attacks.
+
+Configuring SYNPROXY
+
+Configuring SYNPROXY can often be complicated without a guide. For that reason, I’m going to take you through 
+the steps for configuring it one-by-one. (You can also use this script to simplify the setup.)
+
+This example can be used for protecting a web-server, simply export PORT=80.
+
+Step #1: In the “raw” table, we need to make sure connections that need protection don’t create new conntrack
+entries for SYN packets.
+
+# iptables -t raw -I PREROUTING -i $DEV -p tcp -m tcp –syn –dport $PORT -j CT –notrack
+
+Step #2: Next, you need to enable more strict conntracking. This is necessary to have ACK packets (from 3WHS) 
+marked as INVALID state.
+
+# /sbin/sysctl -w net/netfilter/nf_conntrack_tcp_loose=0
+
+Step #3: Now we need to catch these packets and direct them to the SYNPROXY target module. To do this, use the 
+following rule to catch UNTRACKED SYN and INVALID packets that contain the ACK from 3WHS (and also others, but
+they will fall-through).
+
+# iptables -A INPUT -i $DEV -p tcp -m tcp –dport $PORT -m state –state INVALID,UNTRACKED -j SYNPROXY –sack-perm 
+–timestamp –wscale 7 –mss 1460
+
+Step #4: Catch the INVALID state packets that fell-through the SYNPROXY module and drop those.  Basically, 
+this will drop SYN-ACK based floods.
+
+# iptables -A INPUT -m state –state INVALID -j DROP
+
+Step #5: Remember to also enable TCP timestamps as SYN cookies utilize this TCP option field.
+
+# sbin/sysctl -w net/ipv4/tcp_timestamps=1
+
+Step #6: If you have a busy site, it’s recommended to do some conntrack entry tuning to increase the default 64K 
+conn limit. However, it is crucial for performance that you also remember to increase the conntrack hash size.
+
+# echo 1000000 > /sys/module/nf_conntrack/parameters/hashsize
+
+# /sbin/sysctl -w net/netfilter/nf_conntrack_max=2000000
+
+Remember to set your own limits and calculate the memory usage. In this example, 2 million entries times 288 
+bytes = max 576.0 MB of potential memory usage. For the hash, each hash list “head” is only 8 bytes times 1 
+million is only 8 MB of fixed allocated memory (mind your CPU’s L3 cache-size when choosing the hash size).
+
+Considerations when using SYNPROXY
+
+Enabling SYNPROXY does comes at a cost. The connection establishment phase is going to be slower due to 
+the extra connection setup needed towards the end-host. When the end-host is localhost, then this extra step 
+is obviously very fast but nonetheless adds latency.
+
+The parameters to the SYNPROXY target module must match TCP options and settings supported by the end-host that 
+the TCP connections are being proxied for. Detecting and setting this up is manually done per rule setting.
+(A helper tool “nfsynproxy” is part of iptables release 1.4.21). This unfortunately means the module cannot be 
+easily deployed in DHCP-based firewall environments.
+
+In the future, the plan is to auto detect end-host TCP options. This is being tracked in Red Hat BZ 1059679,
+and is waiting for customers requesting this feature (…does anybody get this hint?).
