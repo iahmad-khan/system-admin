@@ -1,0 +1,8 @@
+   9  apt-get update 
+   10  apt-get install software-properties-common
+   11  apt-add-repository ppa:ansible/ansible
+   12  apt-get update 
+   13  apt-get install ansible
+   14  ssh-keygen 
+   15  cat ~/.ssh/id_rsa.pub
+   16  nano /etc/ansible/hosts
