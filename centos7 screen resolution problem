@@ -1,0 +1,14 @@
+   33  cvt 1280 1024 75                                                                                                                                      
+   34  xrandr --newmode "1280x1024_75.00"  138.75  1280 1368 1504 1728  1024 1027 1034 1072 -hsync +vsync                                                    
+   35  xrandr --addmode VGA1 1280x1024_75.00                                                                                                                 
+   36  nano layout.sh                                                                                                                                        
+   37  chmod +x layout.sh                                                                                                                                    
+   38  ./layout.sh                                                                                                                                           
+   39  nano layout.sh                                                                                                                                        
+   40  ./layout.sh  
+   
+   
+   
+  cat layout.sh
+  #!/bin/sh                                                                                                                    
+  xrandr --output HDMI1 --off --output LVDS1 --mode 1366x768 --pos 0x0 --rotate normal --output DP1 --off --output VGA1 --mode 1280x1024_75.00 --pos 1366x0 --rotate normal 
