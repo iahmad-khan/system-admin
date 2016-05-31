@@ -1,0 +1,19 @@
+   45  apt-get update
+   46  apt-get install memcached
+   47  /etc/init.d/memcached status
+   49  pgrep memcached
+   50  nano /etc/memcached.conf 
+   51  echo stats | nc 127.0.0.1 11211
+   52  echo "stats settings" | nc localhost 11211
+   53  echo -e 'add foo 0 300 3\r\nBAR\r' | nc localhost 11211
+   54  echo -e 'get foo\r' | nc localhost 11211
+   55  echo -e 'delete foo\r' | nc localhost 11211
+   56  apt-get install php5-memcached php5-fpm php5
+   57  apt-get install mysql-server php5-mysql php5
+   58  mysql_secure_installation 
+   59  service php5-fpm restart
+   60  service apache2 restart
+   61  php5 -i | grep memcache
+   62  apt-get install python-memcache
+   63  /usr/share/memcached/scripts/memcached-tool 127.0.0.1:11211 display
+   64  /usr/share/memcached/scripts/memcached-tool 127.0.0.1:11211 stats
