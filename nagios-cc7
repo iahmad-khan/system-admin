@@ -73,11 +73,16 @@ Commands:
   267  curl http://localhost/nagios
 
 
-Post install:
+Using yum epel:
+ 458   yum --enablerepo=epel -y install nagios nagios-plugins-{ping,disk,users,procs,load,swap,ssh,http}
+  459  nano /etc/httpd/conf.d/nagios.conf
+  460  ls /etc/nagios/conf.d/
+  467  nano /etc/httpd/conf.d/nagios.conf
+  468  htpasswd /etc/nagios/passwd nagiosadmin
+  469  systemctl start nagios 
+  470  chkconfig nagios on 
+  471  systemctl restart httpd 
+  472  nano /etc/httpd/conf.d/nagios.conf 
+  473  nano /etc/nagios/nagios.cfg 
 
-Web Interface Options:
- ------------------------
-                 HTML URL:  http://localhost/nagios/
-                  CGI URL:  http://localhost/nagios/cgi-bin/
- Traceroute (used by WAP):  /usr/bin/traceroute
 
