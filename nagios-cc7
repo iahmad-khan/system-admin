@@ -1,2 +1,83 @@
 install and configure nagios core on cent os 7
 https://assets.nagios.com/downloads/nagioscore/docs/Nagios-Core-Installing-On-Centos7.pdf
+
+Commands:
+192  setenforce 0
+  193  nano /etc/selinux/config 
+  194  yum install httpd php php-cli gcc glibc glibc-common gd gd-devel net-snmp openssl-devel wget unzip
+  195  useradd nagios
+  196  groupadd nagcmd
+  197  usermod -a -G nagcmd nagios
+  198  usermod -a -G nagcmd apache
+  199  cd /tmp/
+  200  wget https://assets.nagios.com/downloads/nagioscore/releases/nagios-4.1.1.tar.gz
+  201  wget http://www.nagios-plugins.org/download/nagios-plugins-2.1.1.tar.gz
+  202  tar zxf nagios-4.1.1.tar.gz
+  203  tar zxf nagios-plugins-2.1.1.tar.gz
+  204  cd nagios-4.1.1/
+  205  ls
+  206  ./configure --help
+  207  ./configure --with-command-group=nagcmd
+  208  make all
+  209  make install
+  210  make install-init
+  211  make install-commandmode
+  212  make install-webconf
+  213  htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin
+  214  mkdir -p /usr/local/nagios/
+  215  mkdir -p /usr/local/nagios/etc
+  216  htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin
+  217  cd ..
+  218  cd nagios-plugins-2.1.1/
+  219  ./configure --with-nagios-user=nagios --with-nagios-group=nagios --with-openssl
+  220  make all
+  221  make install
+  222  systemctl status httpd
+  223  systemctl restart httpd
+  224  systemctl status httpd
+  225  systemctl status httpd -l
+  226  service httpd start
+  227  rm -rf /var/run/httpd/htcacheclean/*
+  228  ps aux | grep httpd
+  229  systemctl restart httpd
+  230  systemctl start httpd
+  231  journalctl -xe
+  232  tail /var/log/httpd/error_log
+  233  lsof
+  234  lsof --help
+  235  lsof /
+  236  man lsof
+  244  service nagios start
+  245  journalctl -xe
+  246  journalctl 
+  247  reboot
+  248  systemctl start httpd
+  249  tail /var/log/messages
+  250  nano /etc/httpd/conf.d/php.conf
+  251  nano /etc/httpd/conf/httpd.conf 
+  252  nano /etc/httpd/conf.d/php.conf 
+  253  systemctl start httpd
+  254  service nagios start
+  255  tail /var/log/messages
+  256  find / -name nagios.cfg
+  257  cp /tmp/nagios-4.1.1/t/etc/nagios.cfg /usr/local/nagios/etc/
+  258  service nagios start
+  259  tail /var/log/messages
+  260  cp -r /tmp/nagios-4.1.1/t/etc/* /usr/local/nagios/etc/*
+  261  ls /usr/local/nagios/etc/
+  262  cp -r /tmp/nagios-4.1.1/t/etc/* /usr/local/nagios/etc/
+  263  ls /usr/local/nagios/etc/
+  264  chown -r nagios:nagios /usr/local/nagios/
+  265  chown -R nagios:nagios /usr/local/nagios/
+  266  service nagios start
+  267  curl http://localhost/nagios
+
+
+Post install:
+
+Web Interface Options:
+ ------------------------
+                 HTML URL:  http://localhost/nagios/
+                  CGI URL:  http://localhost/nagios/cgi-bin/
+ Traceroute (used by WAP):  /usr/bin/traceroute
+
