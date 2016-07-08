@@ -1,0 +1,25 @@
+  295  yum -y update
+  297  yum install httpd
+  298  systemctl enable httpd.service
+  299  systemctl start httpd.service
+  300  ip addr show eth0 | grep inet | awk '{ print $2; }' | sed 's/\/.*$//'
+  301  ip addr show | grep inet | awk '{ print $2; }' | sed 's/\/.*$//'
+  302  ip addr show eth0 | grep inet | awk '{ print $2; }' | sed 's/\/.*$//'
+  303  curl http://icanhazip.com
+  304  yum install mariadb-server mariadb
+  305  systemctl start mariadb
+  306  mysql_secure_installation
+  307  systemctl enable mariadb.service
+  308  yum install php php-mysql
+  309  yum install php-fpm
+  310  nano /var/www/html/index.php
+  311  firewall-cmd --permanent --zone=public --add-service=http
+  312  ls -l  /var/www/html/index.php
+  313  chmod +x  /var/www/html/index.php
+  314  nano /var/www/html/index.php
+  315  yum install php
+  316  service php-fpm start
+  317  service httpd restart
+  318  cd /var/www/html/
+  319  ls
+  320  mv index.php info.php
