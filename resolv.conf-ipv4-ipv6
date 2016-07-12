@@ -2,4 +2,5 @@
 if you want to preserve the settings of /etc/resolve.conf (not to be overwitten by dhclient) , 
 then edit the file /etc/sysconfig/network-scripts/ifcg-eth0 and set PEER DNS = no . 
 
-The resolv.conf file can also be deployed through puppet to have the desired ipv4 name servers addresses. 
+The resolv.conf file can also be deployed through puppet to have the desired ipv4 name servers addresses, 
+and that is the current case. 
