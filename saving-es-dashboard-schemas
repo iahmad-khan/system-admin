@@ -4,12 +4,15 @@ git clone git@github.com:cms-sw/cms-bot.git
 
 cd cms-bot/es-kibana-dashboards
 
-declare -a DASH_BOARDS=('RelVals' 'Jenkins' 'IBs' 'JobReports' 'IWYU' 'IB+Unit+Tests' 'CMSREP' 'IBsDataSets' 'Hypernews' 'Main')
+#declare -a DASH_BOARDS=('RelVals' 'Jenkins' 'IBs' 'JobReports' 'IWYU' 'IB+Unit+Tests' 'CMSREP' 'IBsDataSets' 'Hypernews' 'Main')
 
-for dashboard in "${DASH_BOARDS[@]}"
-  do
-    curl "http://<user>:<password>@<es-host>.cern.ch:9200/kibana-int/dashboard/$dashboard?pretty"|sed 's/\\/''/g' >${dashboard}.json
-  done
+#for dashboard in "${DASH_BOARDS[@]}"
+#  do
+#    curl "http://<user>:<password>@<es-host>.cern.ch:9200/kibana-int/dashboard/$dashboard?pretty"|sed 's/\\/''/g' >${dashboard}.json
+#  done
+#get all dashboards in one query
+
+curl 'http::/<user><pass>@<es-host>:9200/kibana-int/_search/?size=100&pretty=true' -d '{ "query" : { "match_all" : {} }}' | sed 's/\\//g'>dashboards-schema.json
 
 git commit -a -m "kibana dashbaords upated"
 
