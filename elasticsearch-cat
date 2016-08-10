@@ -1,0 +1,96 @@
+http://chasemp.github.io/2015/08/05/exploring-elasticsearch-_cat/
+
+==== Preamble
+
+If you want to index and search your documents with lucene then
+Elasticsearch seems to be the popular way to do so while adding
+redundandcy, clustering, and an API on top of Lucene. Elasticsearch
+has a collection of REST API's with one subset not returning json at all.
+The _cat API is meant for humans. While there are CLI tools made
+for parsing json most of the popular tools we are used to are more
+natively served with raw textual data.
+
+Making sure the API is responding
+
+It's worth noting that when a cluster is new and has no designated
+master nodes this API seems to hang indefinitely. If there is a splitbrain
+problem the same thing occurs. This can be really concerning if you are
+in trouble master role wise as the API you expect to query will not respond.
+
+[2015-09-16 17:04:08,233][DEBUG][action.admin.cluster.health] \
+[elastic-node] no known master node, scheduling a retry
+There can be duplicate information across API calls. For instance, in order
+to make sense of the shards you undoubtably need the index status. Whatever
+endpoint is more appropriate is ultimately a matter of perspective.
+
+curl -s 'http://localhost:9200/'
+{
+“status” : 200,
+“name” : “elastic-node”,
+“cluster_name” : “my-cluster-name”,
+“version” : {
+“number” : “1.7.1”,
+“build_hash” : “”,
+“build_timestamp” : “2015-07-29T09:54:16Z”,
+“build_snapshot” : false,
+“lucene_version” : “4.10.4”
+},
+“tagline” : “You Know, for Search”
+}
+
+Cat
+
+curl -s localhost:9200/_cat/
+aliases
+allocation
+count - document count
+fielddata - field data by index
+health - cluster health
+indices - index overview and status
+master - find current master node
+nodes - node status(es)
+pending_tasks - task backlog information 
+plugins - plugins and versions across all nodes
+recovery - index/shard status with movement info
+thread pool - tons of info on active threads across nodes
+shards - tons of info on shard states
+segments - low level segment info
+
+_cat tricks
+
+Seeing all possible columns
+
+curl 'localhost:9200/_cat/master?help'
+id | | node id
+host | h | host name
+ip | | ip address
+node | n | node name
+
+Column headers
+
+A note is this will not show columns for which there are no data. This is
+noticeable for a few endpoints such as fielddata especially.
+
+curl 'localhost:9200/_cat/master?v'
+id host ip node
+1234 elastic-node 10.0.0.143 elastic-node
+
+Picking relevant column headers
+
+curl localhost:9200/_cat/master?h='host'
+
+elastic-node
+
+curl localhost:9200/_cat/master?h='host,ip'
+
+elastic-node 10.0.0.143
+Watching shard movement
+
+curl -s 'localhost:9200/_cat/recovery?active_only=true' | \
+awk '{printf "%-19s %6s %-12s => %-12s\n", $1, $13, $6, $7}' | \
+sort -n -k2 -r
+
+myindex  59.1% elastic-node1  => elastic-node2
+Reference
+
+https://aphyr.com/posts/323-call-me-maybe-elasticsearch-1-5-0
