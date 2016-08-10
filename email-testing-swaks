@@ -1,0 +1,6 @@
+aptitude install swaks
+
+ swaks --to task@example.com \
+ --from me@example.com \
+ --h-Subject: 'my email' \
+ --server localhost
