@@ -1,0 +1,214 @@
+http://www.speedguide.net/articles/linux-tweaking-121
+Raising netowrk limits for broadband under Linux
+2003-04-01 (updated: 2015-05-27) by Philip
+Tags: TCP Window, WAN, TCP/IP, tweak, Linux 
+The TCP/IP parameters for tweaking a Linux-based machine for fast internet connections are located in /proc/sys/net/... (assuming 2.1+ kernel). This location is volatile, and changes are reset at reboot. There are a couple of methods for reapplying the changes at boot time, ilustrated below.
+
+
+
+Locating the TCP/IP parameters
+All TCP/IP tunning parameters are located under /proc/sys/net/...  For example, here is a list of the most important tunning parameters, along with short description of their meaning:
+
+/proc/sys/net/core/rmem_max - Maximum TCP Receive Window
+/proc/sys/net/core/wmem_max - Maximum TCP Send Window
+/proc/sys/net/ipv4/tcp_rmem - memory reserved for TCP receive buffers
+/proc/sys/net/ipv4/tcp_wmem - memory reserved for TCP send buffers
+/proc/sys/net/ipv4/tcp_timestamps - Timestamps (RFC 1323) add 12 bytes to the TCP header...
+/proc/sys/net/ipv4/tcp_sack - TCP Selective Acknowledgements. They can reduce retransmissions, however make servers more prone to DDoS Attacks and increase CPU utilization.
+/proc/sys/net/ipv4/tcp_window_scaling - support for large TCP Windows (RFC 1323). Needs to be set to 1 if the Max TCP Window is over 65535.
+
+Keep in mind everything under /proc is volatile, so any changes you make are lost after reboot.   There are some additional internal memory buffers for the TCP Window, allocated for each connection:
+
+/proc/sys/net/ipv4/tcp_rmem - memory reserved for TCP rcv buffers (reserved memory per connection default)
+/proc/sys/net/ipv4/tcp_wmem  - memory reserved for TCP snd buffers (reserved memory per connection default)
+
+
+
+The tcp_rmem and tcp_wmem contain arrays of three parameter values: the 3 numbers represent minimum, default and maximum memory values. Those 3 values are used to bound autotunning and balance memory usage while under global memory stress.
+
+
+
+Applying TCP/IP Parameters at System Boot
+TCP/IP parameters in Linux are located in /proc/sys/net/ipv4 and /proc/sys/net/core . This is part of the Virtual filesystem which resides in system memory (RAM), and any changes to it are volatile, they are reset when the machine is rebooted.
+
+There are two methods that we can use to apply the settings at each reboot. First, we can edit /etc/sysctl.conf (or /etc/sysctl.d/sysctl.conf, depending on your distribution). The syntax for setting parameters in this file is by issuing sysctl commands, as follows::
+
+net.core.rmem_default = 256960
+net.core.rmem_max = 256960
+net.core.wmem_default = 256960
+net.core.wmem_max = 256960
+net.ipv4.tcp_timestamps = 0
+net.ipv4.tcp_sack = 0
+net.ipv4.tcp_window_scaling = 1
+
+You can see a list of all tweakable parameters by executing the following in your terminal: sysctl -a | grep tcp  (or simply sysctl -a for a full list).
+
+Alternatively, you can apply the settings at boot time by editing the /etc/rc.local, /etc/rc.d/rc.local, or /etc/boot.local depending on your distribution. Note the difference in syntax, you simply echo the appropriate value in the virtual file system. The TCP/IP parameters should be self-explanatory: we're basically setting the TCP Window to 256960, disabling timestamps (to avoid 12 byte header overhead), enabling tcp window scaling, and selective acknowledgements:
+
+echo 256960 > /proc/sys/net/core/rmem_default
+echo 256960 > /proc/sys/net/core/rmem_max
+echo 256960 > /proc/sys/net/core/wmem_default
+echo 256960 > /proc/sys/net/core/wmem_max
+echo 0 > /proc/sys/net/ipv4/tcp_timestamps
+echo 0 > /proc/sys/net/ipv4/tcp_sack
+echo 1 > /proc/sys/net/ipv4/tcp_window_scaling
+
+You can change the above example values as desired, depending on your internet connection and maximum bandwidth/latency. There are other parameters you can change from the default if you're confident in what you're doing - just find the correct syntax of the values in /proc/sys/net/... and add a line in the above code analogous to the others. To revert to the default parameters, you can just comment or delete the above code from /etc/rc.local and restart.
+
+Note: To manually set the MTU value under Linux, use the command: ifconfig eth0 mtu 1500   (where 1500 is the desired MTU size)
+
+
+
+Changing Current Values
+While testing, the current TCP/IP parameters can be edited without the need for reboot in the following locations:
+
+/proc/sys/net/core/
+rmem_default = Default Receive Window 
+rmem_max = Maximum Receive Window 
+wmem_default = Default Send Window 
+wmem_max = Maximum Send Window
+
+/proc/sys/net/ipv4/
+You'll find timestamps, window scaling, selective acknowledgements, etc.
+
+Keep in mind the values in /proc will be reset upon reboot. You still need to add the code in either sysctl.conf, or  the alternate syntax in rc.local in order to have the changes applied at each boot as described in the section above.
+
+To make any new sysctl.conf changes take effect without rebooting the machine, you can execute:
+
+sysctl -p
+
+To see a list of all relevant tweakable sysctl parameters, along with their current values, try the following in your terminal:
+
+sysctl -a | grep tcp
+
+To set a single sysctl value:
+
+sysctl -w variable=value
+example:  sysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=30
+
+
+
+TCP Parameters to consider
+TCP_FIN_TIMEOUT
+This setting determines the time that must elapse before TCP/IP can release a closed connection and reuse its resources. During this TIME_WAIT state, reopening the connection to the client costs less than establishing a new connection. By reducing the value of this entry, TCP/IP can release closed connections faster, making more resources available for new connections. Adjust this in the presence of many connections sitting in the TIME_WAIT state:
+
+sysctl.conf syntax:
+net.ipv4.tcp_fin_timeout = 15
+
+(default: 60 seconds, recommended 15-30 seconds)
+
+alternative rc.local syntax:
+echo 30 > /proc/sys/net/ipv4/tcp_fin_timeout
+
+
+
+TCP_KEEPALIVE_INTERVAL
+This determines the wait time between isAlive interval probes. To set:
+
+sysctl.conf syntax:
+net.ipv4.tcp_keepalive_intvl = 30
+
+(default: 75 seconds, recommended: 15-30 seconds)
+
+alternative rc.local syntax:
+echo 30 > /proc/sys/net/ipv4/tcp_keepalive_intvl
+
+
+
+TCP_KEEPALIVE_PROBES
+This determines the number of probes before timing out. To set:
+
+sysctl.conf syntax:
+net.ipv4.tcp_keepalive_probes = 5
+
+(default: 9, recommended 5)
+
+alternative rc.local syntax:
+echo 5 > /proc/sys/net/ipv4/tcp_keepalive_probes
+
+
+
+TCP_TW_RECYCLE
+It enables fast recycling of TIME_WAIT sockets. The default value is 0 (disabled). The sysctl documentation incorrectly states the default as enabled. It can be changed to 1 (enabled) in many cases. Known to cause some issues with hoststated (load balancing and fail over) if enabled, should be used with caution.
+
+sysctl.conf syntax:
+net.ipv4.tcp_tw_recycle=1
+
+(boolean, default: 0)
+
+alternative rc.local syntax:
+echo 1 > /proc/sys/net/ipv4/tcp_tw_recycle
+
+
+
+TCP_TW_REUSE
+This allows reusing sockets in TIME_WAIT state for new connections when it is safe from protocol viewpoint. Default value is 0 (disabled). It is generally a safer alternative to tcp_tw_recycle
+
+sysctl.conf syntax:
+net.ipv4.tcp_tw_reuse=1
+
+(boolean, default: 0)
+
+alternative rc.local syntax:
+echo 1 > /proc/sys/net/ipv4/tcp_tw_reuse
+
+Note: The tcp_tw_reuse setting is particularly useful in environments where numerous short connections are open and left in TIME_WAIT state, such as web servers. Reusing the sockets can be very effective in reducing server load.
+
+
+
+Linux Netfilter Tweaks
+Try this for a list netfilter parameters:  sysctl -a | grep netfilter
+
+We can add the following commands to the /etc/sysctl.conf file to tune individual parameters, as follows.
+To reduce the number of connections in TIME_WAIT state, we can decrease the number of seconds connections are kept in this state before being dropped:
+
+# reduce TIME_WAIT from the 120s default to 30-60s
+net.netfilter.nf_conntrack_tcp_timeout_time_wait=30
+# reduce FIN_WAIT from teh 120s default to 30-60s
+net.netfilter.nf_conntrack_tcp_timeout_fin_wait=30
+
+You can commit the sysctl.conf changes without rebooting (and test for possible syntax errors) by executing: sysctl -p
+To check sysctl parameters, use: sysctl -a
+
+Misc Notes: You may want to reduce net.netfilter.nf_conntrack_tcp_timeout_established to 900 or some manageable number as well.
+To check the actual number of current connections in the TIME_WAIT state, for example, try: netstat -n | grep TIME_WAIT | wc -l
+
+
+
+Kernel Recompile Option
+There is another method one can use to directly set the default TCP/IP parameters, involving kernel recompile... If you're brave enough. Look for the parameters in the following files: 
+/LINUX-SOURCE-DIR/include/linux/skbuff.h  (Look for SK_WMEM_MAX & SK_RMEM_MAX) 
+/LINUX-SOURCE-DIR/include/net/tcp.h (Look for MAX_WINDOW & MIN_WINDOW)
+
+
+
+Determine Connection States
+It is often useful to decrease some of the TCP Timeouts to release resources faster and reduce memory use, the default TCP timeouts may leave too many connections in the TIME_WAIT state. To see a list of all current connections to the machine and their states, try:
+
+netstat -tan | grep ':80 ' | awk '{print $6}' | sort | uniq -c
+
+You will be presented with a list similar to the following:
+
+  4 CLOSING
+12 ESTABLISHED
+  4 FIN_WAIT1
+14 FIN_WAIT2
+12 LAST_ACK
+  1 LISTEN
+10 SYN_RECV
+273 TIME_WAIT
+
+This information can be very useful to determine whether you need to tweak some of the timeouts above.
+
+
+
+SYN Flood Protection
+These settings added to sysctl.conf will make a server more resistant to SYN flood attacks. Applying configures the kernel to use the SYN cookies mechanism, with a backlog queue of 1024 connections, also setting the SYN and SYN/ACK retries to an effective ceiling of about 45 seconds. The defaults for these settings vary depending on kernel version and distribution you may want to check them with sysctl -a | grep syn
+
+net.ipv4.tcp_max_syn_backlog = 1024
+net.ipv4.tcp_syn_retries = 6
+net.ipv4.tcp_synack_retries = 3
+net.ipv4.tcp_syncookies = 1
+
+Notes: The default SYN retries cycle under Linux doubles every time, so 5 retries means: the original packet, 3s, 6s, 12s, 24s.. 6th retry is 48s. Under BSD-derived kernels (including Mac OS X), the retry times triple instead.
+
