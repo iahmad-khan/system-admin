@@ -1,0 +1,25 @@
+Managing docker storage:
+
+option1:
+
+service docker stop
+edit /usr/lib/systemd/system/docker.service :
+  find the line :
+     ExecStart=/usr/bin/dockerd
+     append:  --storage-opt dm.basesize=40G
+     os that the file line looks like this:
+     ExecStart=/usr/bin/dockerd --storage-opt dm.basesize=<nG> where n=40 , or 50 or whatever u choose.
+ 
+systemctl daemon-reload
+systemctl start docker.service
+docker info    #check base device size <nG>
+
+
+Option2 (lvm thinpool):
+
+service docker stop
+rm -rf /var/lib/docker
+pvcreate /dev/vdb1
+vgcreate vg01 /dev/vdb1
+lvcreate -L 50G -T vg001/thinpool1
+/usr/bin/docker daemon --storage-opt dm.thinpooldev=/dev/mapper/vg001-thinpool1 --storage-opt dm.basesize=40G
