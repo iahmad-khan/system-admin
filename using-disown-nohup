@@ -1,0 +1,15 @@
+Many system administrators make a practice of using GNU Screen or tmux to manage jobs running in the terminal. If you have a long-running job that you want to "detach" from the terminal, you can simply use your terminal multiplexer to do it. But what if you don't use tmux or Screen, or you just forgot? For those times, there's nohup and disown.
+
+Have a long-running job you want to "detach" from the terminal? Don't use tmux or Screen? If you haven't started the job yet, nohup is an easy to use option, and if you must stop a job in the middle, there's disown.
+When I'm going to be working at a project for any amount of time, I'm usually running screen or tmux (I usually default to screen, but I have been spending more time with tmux lately to become more familiar with it). But sometimes I'll log into my server or another system and start a job -- like a backup, or copying a really large file -- and realize that I want to close the connection for one reason or another. (One of the downsides in working from a laptop at a coffee shop ...)
+
+If you haven't started the job yet, there's nohup. Short for "no hangup," nohup will detach the program from the current shell and send its output to nohup.out. If you quit the shell or whatever, the process will continue to run until it completes.
+
+Ah, but what if you forget to use nohup, or if you didn't expect to be leaving the computer but get called away? Then there's disown.
+
+The use of disown is a bit more complex. While the command is running, use Ctrl-z to stop it and then use bg to put it in the background. Then you'll use disown %n where n is the job number (jobspec). And, of course, you can find the job number using the jobs command. Run jobs again to verify that the job has been detached -- and you can use ps or top to verify that the job is actually still running.
+
+And that's all there is to it. Complex? No. But you'd be surprised how many new admins -- especially those coming from Windows environments -- are unfamiliar with these utilities.
+
+Note that disown is specific to GNU Bash, so you may not find it on some systems. The nohup command is implemented as a Bash built-in, but also as a separate utility on some systems, so be sure to check if its behavior differs from what's described here.
+
