@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+
+#Author:  Ijaz Ahmad , CMSSDT , CERN
+
 from github import Github
 from os.path import expanduser , exists
 from optparse import OptionParser
