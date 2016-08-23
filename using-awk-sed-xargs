@@ -1,0 +1,1 @@
+docker images | awk '{print $3}' | sed '2,5!d' | xargs docker rmi -f
