@@ -12,13 +12,33 @@ RUN     yum -y install cvmfs cvmfs-config-default
 RUN     /usr/bin/cvmfs_config setup
 RUN     /bin/touch /etc/cvmfs/default.local && /bin/echo "CVMFS_REPOSITORIES=cms.cern.ch,grid.cern.ch" > /etc/cvmfs/default.local
 RUN     /bin/echo "CVMFS_HTTP_PROXY=http://ca-proxy.cern.ch:3128" >> /etc/cvmfs/default.local
-RUN     echo "#!/bin/bash" > /run.sh
-RUN     echo "/sbin/service autofs restart" >> /run.sh
-RUN     echo "/usr/bin/cvmfs_config probe" >> /run.sh 
-RUN     echo "bash" >> /run.sh
-RUN     /bin/chmod +x /run.sh
+RUN     echo "#!/bin/bash" > /etc/profile.d/run.sh && echo "/sbin/service autofs restart" >> /etc/profile.d/run.sh
+RUN     echo "/usr/bin/cvmfs_config probe" >> /etc/profile.d/run.sh
+#RUN    echo 'if [ "X$CMS_CMD" = "X" ] ; then /bin/bash ; else $CMS_CMD ; fi' >> /etc/profile.d/run.sh
+RUN     /bin/chmod +x /etc/profile.d/run.sh
 RUN     wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.1.3/dumb-init_1.1.3_amd64
 RUN     chmod +x /usr/local/bin/dumb-init
 
-ENTRYPOINT ["/usr/local/bin/dumb-init", "--"]
-CMD ["/run.sh"]
+
+Usage:
+
+#pull the image from docker hub
+
+docker pull cmssw/cmssw:cmsenv-slc6
+
+#list images and get the image id
+docker images
+
+#run the previliged container
+
+docker run --privileged -i -t <image-id> /bin/bash
+
+#check cvmfs mounts inside container
+ls /cvmfs/
+
+df -hT
+
+To use an init process inside the container to prevent zombies use dumb-init.
+
+docker run  --privileged -i -t ec379dcc74c1 dumb-init -c -- /bin/bash
+
