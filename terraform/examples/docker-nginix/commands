@@ -1,0 +1,4 @@
+terraform plan -out config.tfplan
+terraform apply
+docker ps
+terraform show
