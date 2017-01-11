@@ -1,0 +1,121 @@
+Create Terraform Config
+
+Terraform works based on a configuration file, in this case config.tf. The configuration defines your infrastructure, in this instance as providers and resources.
+
+A provider is an abstract way of handling the underlying infrastructure and responsible for managing the lifecycle of a resource.
+
+A resource are components of your infrastructure, for example a container or image.
+
+The editor allows us to write the config.tf file. The first section defines a docker host where we want to apply our configuration too.
+
+```
+
+provider "docker" {
+  host = "tcp://docker:2345/"
+}
+
+```
+
+We can now start defining the resources of our infrastructure. The first resource is our Docker image. A resource has two parameters, one is a TYPE and second a NAME. The type is docker_image and the name is nginx. Within the block we define the name and tag of the Docker Image.
+
+```
+
+resource "docker_image" "nginx" {
+  name = "nginx:1.9"
+}
+
+```
+
+We can define our container resource. The resource type is docker_container and name as nginx-server. Within the block we set the resource parameters. We can reference other resources, such as a the image.
+
+```
+
+resource "docker_container" "nginx-server" {
+  name = "nginx-server"
+  image = "${docker_image.nginx.latest}"
+  ports {
+    internal = 80
+  }
+  volumes {
+    container_path  = "/usr/share/nginx/html"
+    host_path = "/home/scrapbook/tutorial/www"
+    read_only = true
+  }
+}
+
+```
+
+Plan Terraform Actions
+
+Once the configuration has been defined we need to create an execution plan. Terraform describes the actions required to achieve the desired state. The plan can be saved using -out. We'll apply the execution plan in the next step.
+
+To create a plan, use the CLI
+
+```
+terraform plan -out config.tfplan
+
+```
+
+The output of the command indicates the changes. In this case, you'll see a + docker_container.nginx-server and + docker_image.nginx to highlight adding the new resources. Finally a summary of Plan: 2 to add, 0 to change, 0 to destroy.
+
+
+
+Apply Terraform Actions
+
+Once the plan has been created we need to apply it to reach our desired state.
+
+Using the CLI, terraform will pull any images required and launch new containers.
+
+`terraform apply`
+
+The output will indicate the changes and the resulting configuration.
+
+
+
+Inspecting Infrastructure
+
+You can use the Docker CLI to view the changes and see the newly launched container.
+
+ `docker ps`
+
+You can inspect this in future using the terraform CLI
+
+ `terraform show`
+ 
+ 
+ Updating Infrastructure:
+ 
+
+As our infrastructure grows and changes, terraform will manage and ensure we always have our defined desired state.
+
+We can change our container to launch two instances, each with different names.
+
+resource "docker_container" "nginx-server" {
+  count = 2
+  name = "nginx-server-${count.index+1}"
+  image = "${docker_image.nginx.latest}"
+  ports {
+    internal = 80
+  }
+  volumes {
+    container_path  = "/usr/share/nginx/html"
+    host_path = "/home/scrapbook/tutorial/www"
+    read_only = true
+  }
+}
+
+If we create a plan you will see the actions Terraform will need to apply to adapt our infrastructure to match our configuration.
+
+terraform plan -out config.tfplan
+
+The plan will outline the changes. Because we're changing the name and adding a resource we'll see Plan: 1 to add, 1 to change, 0 to destroy.
+
+In the details it will explain that changing a container name forces the resource to be recreated name: "nginx-server" => "nginx-server-1" (forces new resource) along with adding the new container + docker_container.nginx-server.1
+
+We can then apply the plan as we did in the previous step.
+
+terraform apply
+
+
+
+
