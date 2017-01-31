@@ -1,0 +1,35 @@
+
+#using systemd to run a service in a container and start it on boot.
+
+#write the systemd service file
+core@74fcea2a3d5a ~ $ cat postgres.service
+[Unit]
+Description=PostgreSQL container
+Requires=docker.service
+After=docker.service
+[Service]
+Restart=on-failure
+RestartSec=10
+ExecStartPre=-/usr/bin/docker stop postgres
+ExecStartPre=-/usr/bin/docker rm postgres
+ExecStart=/usr/bin/docker run --name postgres \
+ --volume /opt/db/postgres:/var/lib/pgsql/data \
+ kiasaki/alpine-postgres
+ExecStop=/usr/bin/docker stop postgres
+[Install]
+WantedBy=multi-user.target
+
+#copy it to systemd config dir
+sudo cp postgres.service /etc/systemd/system
+
+#enable on boot
+sudo systemctl enable /etc/systemd/system/postgres.service
+
+#start the service
+sudo systemctl start postgres.service
+
+#check it docker
+docker ps
+journalctl --no-pager -u postgres.service
+sudo systemctl status postgres.service
+ps aux | grep postgres
