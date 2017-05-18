@@ -1,0 +1,31 @@
+Jenkins migration to 2.46 from 1.6
+
+
+#pause/stop the vm
+openstack server suspend cmsjenkins02
+
+
+#take the volume snapshot that contains jenkins home
+openstack snapshot create --name jenkins-snap <current_jenkins_volume>
+
+#create the volume from snapshot
+openstack volume create --snapshot <snap-id> newjenkins01v
+
+#attach the volume to new vm
+openstack server add volume --device /dev/vdb <new_jenkins_server> <volume-id>
+
+#mount the volume and symlink jenkins home
+mount /dev/vdb /build
+ln -s /build /var/lib/jenkins
+
+#start jenkins service
+systemctl enable jenkins && systemctl start jenkins
+
+# go to jenkins page and enable localcli for admin work temporarily
+#suspend all the jobs
+# upgrade all the plugins
+# resume all the jobs
+
+#issues
+  - use older jenkins-cli to avoid auth issues for jenkins-cli
+  - look at in-process-aproval script to enable groovy execution in jobs
