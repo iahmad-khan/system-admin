@@ -1,0 +1,17 @@
+
+
+ sudo yum install iptables-services
+   sudo systemctl mask firewalld.service
+   sudo systemctl enable iptables.service
+   
+   # Optional:
+   # systemctl enable ip6tables.service
+   # Optional: youmay have 80 -> 8080 redirects. if so, -D (delete) them first:
+   sudo /sbin/iptables -t nat -D OUTPUT -o lo -p tcp --dport 80 -j REDIRECT --to-port 8080
+   sudo /sbin/iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
+   
+   sudo /sbin/iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8180
+   sudo /sbin/iptables -t nat -I OUTPUT -o lo -p tcp --dport 80 -j REDIRECT --to-port 8180
+   sudo service iptables save
+
+
